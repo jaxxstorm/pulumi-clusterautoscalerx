@@ -6,7 +6,7 @@ import (
 
 	"github.com/pulumi/pulumi-kubernetes/sdk/v2/go/kubernetes/yaml"
 
-	"github.com/pulumi/pulumi-aws/sdk/v2/go/aws/iam"
+	"github.com/pulumi/pulumi-aws/sdk/v3/go/aws/iam"
 	corev1 "github.com/pulumi/pulumi-kubernetes/sdk/v2/go/kubernetes/core/v1"
 	"github.com/pulumi/pulumi-kubernetes/sdk/v2/go/kubernetes/helm/v2"
 	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v2/go/kubernetes/meta/v1"
@@ -30,9 +30,11 @@ type Args struct {
 func NewClusterAutoscaler(ctx *pulumi.Context, name string, args Args, opts ...pulumi.ResourceOption) (*ClusterAutoscaler, error) {
 	ca := &ClusterAutoscaler{}
 
-	autoscaler := config.New(ctx, "clusterautoscaler")
-	oidcArn := autoscaler.Require("oidcArn")
-	oidcUrl := autoscaler.Require("oidcUrl")
+	autoscalerConfig := config.New(ctx, "clusterautoscaler")
+	awsConfig := config.New(ctx, "region")
+	oidcArn := autoscalerConfig.Require("oidcArn")
+	oidcUrl := autoscalerConfig.Require("oidcUrl")
+	region := awsConfig.Require("region")
 
 	var err error
 
@@ -73,7 +75,7 @@ func NewClusterAutoscaler(ctx *pulumi.Context, name string, args Args, opts ...p
 				"Action": "sts:AssumeRoleWithWebIdentity",
 				"Condition": map[string]interface{}{
 					"StringEquals": map[string]interface{}{
-						oidcUrl: serviceAccountName,
+						fmt.Sprintf("%s:sub", oidcUrl): serviceAccountName,
 					},
 				},
 			},
@@ -123,6 +125,7 @@ func NewClusterAutoscaler(ctx *pulumi.Context, name string, args Args, opts ...p
 			"autoDiscovery": pulumi.Map{
 				"clusterName": pulumi.String(args.ClusterName),
 			},
+			"awsRegion": pulumi.String(region),
 		},
 		Namespace: pulumi.String(args.Namespace),
 		Transformations: []yaml.Transformation{
