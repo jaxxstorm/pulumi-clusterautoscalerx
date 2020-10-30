@@ -31,7 +31,7 @@ func NewClusterAutoscaler(ctx *pulumi.Context, name string, args Args, opts ...p
 	ca := &ClusterAutoscaler{}
 
 	autoscalerConfig := config.New(ctx, "clusterautoscaler")
-	awsConfig := config.New(ctx, "region")
+	awsConfig := config.New(ctx, "aws")
 	oidcArn := autoscalerConfig.Require("oidcArn")
 	oidcUrl := autoscalerConfig.Require("oidcUrl")
 	region := awsConfig.Require("region")
